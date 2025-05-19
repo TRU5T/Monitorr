@@ -39,15 +39,61 @@ logger = logging.getLogger('monitorr')
 
 def load_config():
     """Load configuration from config.yml"""
+    default_config = {
+        'docker': {
+            'host': 'local',
+            'tls': False,
+            'timeout': 10
+        },
+        'monitors': {},
+        'alerts': {
+            'smtp': {
+                'enabled': False,
+                'server': 'smtp.example.com',
+                'port': 587,
+                'use_tls': True,
+                'username': 'your-email@example.com',
+                'password': '',
+                'from_email': 'your-email@example.com',
+                'to_emails': ['alerts@example.com'],
+                'cooldown': 1800
+            },
+            'discord': {
+                'enabled': False,
+                'webhook_url': '',
+                'cooldown': 300,
+                'mentions': ['@everyone']
+            }
+        }
+    }
+    
     try:
         with open('config.yml', 'r') as f:
-            return yaml.safe_load(f)
+            config = yaml.safe_load(f)
+            # Ensure we have a valid config dictionary
+            if not isinstance(config, dict):
+                logger.warning("Invalid config.yml format. Using default configuration.")
+                config = default_config
+            # Ensure all required sections exist
+            for section in ['docker', 'monitors', 'alerts']:
+                if section not in config:
+                    config[section] = default_config[section]
+            return config
     except FileNotFoundError:
-        logger.error("config.yml not found. Please create one (see config.example.yml)")
-        sys.exit(1)
+        logger.warning("config.yml not found. Creating default configuration.")
+        try:
+            with open('config.yml', 'w') as f:
+                yaml.dump(default_config, f, default_flow_style=False)
+            return default_config
+        except Exception as e:
+            logger.error(f"Failed to create default config.yml: {e}")
+            return default_config
     except yaml.YAMLError as e:
         logger.error(f"Error parsing config.yml: {e}")
-        sys.exit(1)
+        return default_config
+    except Exception as e:
+        logger.error(f"Unexpected error loading config: {e}")
+        return default_config
 
 class Monitorr:
     def __init__(self):
@@ -113,8 +159,18 @@ class Monitorr:
         if not self.docker_client:
             logger.warning("No Docker client available, skipping monitor setup")
             return
+        
+        # Ensure monitors section exists
+        if 'monitors' not in self.config:
+            self.config['monitors'] = {}
+            logger.warning("No monitors section in config, using empty configuration")
+            return
             
         for monitor_name, monitor_config in self.config['monitors'].items():
+            if not isinstance(monitor_config, dict):
+                logger.warning(f"Invalid configuration for monitor {monitor_name}, skipping")
+                continue
+                
             if not monitor_config.get('enabled', False):
                 continue
                 

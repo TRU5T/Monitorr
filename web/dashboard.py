@@ -6,12 +6,21 @@ from flask import Blueprint, render_template, current_app, redirect, url_for, fl
 import docker
 import datetime
 import threading
+from queue import Queue
 
 bp = Blueprint('dashboard', __name__)
+
+# Message queue for background operations
+message_queue = Queue()
 
 @bp.route('/')
 def index():
     """Dashboard home page with monitor status"""
+    # Process any pending messages
+    while not message_queue.empty():
+        message, category = message_queue.get()
+        flash(message, category)
+    
     monitorr = current_app.config['MONITORR_INSTANCE']
     if not monitorr:
         # No Monitorr instance available
@@ -75,9 +84,9 @@ def check_now(monitor_name):
     def run_check():
         try:
             monitorr.monitors[monitor_name].check_logs()
-            flash(f"Log check completed for {monitor_name}", "success")
+            message_queue.put((f"Log check completed for {monitor_name}", "success"))
         except Exception as e:
-            flash(f"Error checking logs for {monitor_name}: {e}", "danger")
+            message_queue.put((f"Error checking logs for {monitor_name}: {e}", "danger"))
     
     thread = threading.Thread(target=run_check)
     thread.daemon = True
