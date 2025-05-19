@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}{{ container.name }} Details - Monitorr{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-cube"></i> 
+            Container Details
+            <small class="text-muted">({{ container.name }})</small>
+        </h1>
+        <div>
+            <a href="{{ url_for('containers.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Containers
+            </a>
+            {% if container.status == 'running' %}
+            <a href="{{ url_for('logs.view_logs', monitor_name=container.name) }}" class="btn btn-outline-primary">
+                <i class="fas fa-file-alt"></i> View Logs
+            </a>
+            {% endif %}
+            <a href="{{ url_for('settings.add_monitor', container_name=container.name) }}" class="btn btn-primary">
+                <i class="fas fa-plus-circle"></i> Add Monitor
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle"></i> Basic Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <tbody>
+                            <tr>
+                                <th>Container ID</th>
+                                <td><code>{{ container.id }}</code></td>
+                            </tr>
+                            <tr>
+                                <th>Name</th>
+                                <td>{{ container.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Image</th>
+                                <td>{{ container.image }}</td>
+                            </tr>
+                            <tr>
+                                <th>Status</th>
+                                <td>
+                                    <span class="badge bg-{% if container.status == 'running' %}success{% elif container.status == 'exited' %}danger{% else %}warning{% endif %}">
+                                        {{ container.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Created</th>
+                                <td>{{ container.created }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-network-wired"></i> Networking
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>Ports</h6>
+                {% if container.ports %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Container Port</th>
+                                <th>Host IP</th>
+                                <th>Host Port</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for port, mappings in container.ports.items() %}
+                                {% if mappings %}
+                                    {% for mapping in mappings %}
+                                    <tr>
+                                        <td>{{ port }}</td>
+                                        <td>{{ mapping.get('HostIp', '0.0.0.0') }}</td>
+                                        <td>{{ mapping.get('HostPort', 'None') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td>{{ port }}</td>
+                                    <td colspan="2">Not mapped</td>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No port mappings found</p>
+                {% endif %}
+                
+                <h6 class="mt-4">Networks</h6>
+                {% if container.networks %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Network Name</th>
+                                <th>IP Address</th>
+                                <th>Gateway</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for net_name, net_info in container.networks.items() %}
+                            <tr>
+                                <td>{{ net_name }}</td>
+                                <td>{{ net_info.get('IPAddress', 'Unknown') }}</td>
+                                <td>{{ net_info.get('Gateway', 'Unknown') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No networks found</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs"></i> Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>Command</h6>
+                {% if container.command %}
+                <pre class="bg-dark text-light p-3 rounded"><code>{{ container.command|join(' ') }}</code></pre>
+                {% else %}
+                <p class="text-muted">No command found</p>
+                {% endif %}
+                
+                <h6 class="mt-4">Volumes</h6>
+                {% if container.volumes %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Host Path</th>
+                                <th>Container Path</th>
+                                <th>Mode</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for volume in container.volumes %}
+                            <tr>
+                                <td>{{ volume.get('Source', 'Unknown') }}</td>
+                                <td>{{ volume.get('Destination', 'Unknown') }}</td>
+                                <td>{{ volume.get('Mode', 'Unknown') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No volumes found</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tags"></i> Labels
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if container.labels %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for key, value in container.labels.items() %}
+                            <tr>
+                                <td><code>{{ key }}</code></td>
+                                <td>{{ value }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No labels found</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

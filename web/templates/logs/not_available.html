@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Logs Not Available - Monitorr{% endblock %}
+
+{% block content_with_sidebar %}
+<div class="col-12 content">
+    <div class="row">
+        <div class="col-md-8 offset-md-2 text-center mt-5">
+            <div class="alert alert-warning">
+                <h2><i class="fas fa-exclamation-triangle"></i> Logs Not Available</h2>
+                <p class="lead mt-3">
+                    The Monitorr service is not currently running, so logs cannot be displayed.
+                </p>
+                <hr>
+                <p>
+                    To view container logs, you need to start the Monitorr service.
+                </p>
+                <div class="mt-4">
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">
+                        <i class="fas fa-home"></i> Return to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

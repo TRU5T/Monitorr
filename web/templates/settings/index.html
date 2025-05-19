@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Monitorr{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-cog"></i> Settings
+        </h1>
+        <div>
+            <a href="{{ url_for('settings.docker_settings') }}" class="btn btn-outline-primary">
+                <i class="fab fa-docker"></i> Docker Settings
+            </a>
+            <a href="{{ url_for('settings.environment') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-list"></i> Environment Variables
+            </a>
+            <a href="{{ url_for('settings.restart') }}" class="btn btn-outline-danger" 
+               onclick="return confirm('Are you sure you want to restart the Monitorr service?')">
+                <i class="fas fa-sync-alt"></i> Restart Service
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-file-alt"></i> Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {{ form.csrf_token }}
+                    
+                    <div class="mb-3">
+                        {{ form.yaml_config.label(class="form-label") }}
+                        {{ form.yaml_config(class="form-control font-monospace", rows=30) }}
+                        {% if form.yaml_config.errors %}
+                            {% for error in form.yaml_config.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
+                        <div class="form-text">
+                            Edit the YAML configuration file. Changes will take effect after restarting the service.
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer">
+                <div class="text-muted">
+                    <small>
+                        <i class="fas fa-info-circle"></i> 
+                        After saving, you need to restart the Monitorr service for changes to take effect.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

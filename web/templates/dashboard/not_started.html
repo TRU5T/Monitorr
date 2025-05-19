@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Monitorr Not Running{% endblock %}
+
+{% block content_with_sidebar %}
+<div class="col-12 content">
+    <div class="row">
+        <div class="col-md-8 offset-md-2 text-center mt-5">
+            <div class="alert alert-warning">
+                <h2><i class="fas fa-exclamation-triangle"></i> Monitorr Service Not Running</h2>
+                <p class="lead mt-3">
+                    The Monitorr service is not currently running or not properly connected to the web interface.
+                </p>
+                <hr>
+                <p>
+                    To start monitoring Docker containers, you need to start the Monitorr service.
+                </p>
+                <div class="mt-4">
+                    <h4>How to start Monitorr:</h4>
+                    <div class="text-start bg-dark text-light p-3 rounded">
+                        <code>python monitorr.py</code>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">
+                        <i class="fas fa-sync-alt"></i> Refresh Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

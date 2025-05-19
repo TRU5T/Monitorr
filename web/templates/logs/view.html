@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}{{ container_name }} Logs - Monitorr{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-file-alt"></i> 
+            {{ monitor_name|capitalize }} Logs
+            <small class="text-muted">({{ container_name }})</small>
+        </h1>
+        <div>
+            <a href="{{ url_for('logs.index') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Logs
+            </a>
+            {% if is_monitored %}
+            <a href="{{ url_for('dashboard.check_now', monitor_name=monitor_name) }}" class="btn btn-outline-success">
+                <i class="fas fa-sync-alt"></i> Check Now
+            </a>
+            {% else %}
+            <a href="{{ url_for('settings.add_monitor', container_name=container_name) }}" class="btn btn-success">
+                <i class="fas fa-plus-circle"></i> Add Monitor
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list"></i> Log Entries
+                </h5>
+            </div>
+            <div class="card-body pb-0">
+                <div class="row mb-3">
+                    <!-- Time Range Filter -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label"><i class="fas fa-clock"></i> Time Range</label>
+                        <div class="btn-group w-100" role="group">
+                            <a href="{{ url_for('logs.view_logs', monitor_name=monitor_name, range='1h', filter=filter_type, text=filter_text) }}" 
+                               class="btn btn-sm btn-{% if time_range == '1h' %}primary{% else %}outline-primary{% endif %}">
+                                1h
+                            </a>
+                            <a href="{{ url_for('logs.view_logs', monitor_name=monitor_name, range='24h', filter=filter_type, text=filter_text) }}" 
+                               class="btn btn-sm btn-{% if time_range == '24h' %}primary{% else %}outline-primary{% endif %}">
+                                24h
+                            </a>
+                            <a href="{{ url_for('logs.view_logs', monitor_name=monitor_name, range='7d', filter=filter_type, text=filter_text) }}" 
+                               class="btn btn-sm btn-{% if time_range == '7d' %}primary{% else %}outline-primary{% endif %}">
+                                7d
+                            </a>
+                            <a href="{{ url_for('logs.view_logs', monitor_name=monitor_name, range='all', filter=filter_type, text=filter_text) }}" 
+                               class="btn btn-sm btn-{% if time_range == 'all' %}primary{% else %}outline-primary{% endif %}">
+                                All
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Filter Type -->
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label"><i class="fas fa-filter"></i> Filter Type</label>
+                        <div class="btn-group w-100" role="group">
+                            <a href="{{ url_for('logs.view_logs', monitor_name=monitor_name, range=time_range, filter='all', text=filter_text) }}" 
+                               class="btn btn-sm btn-{% if filter_type == 'all' %}primary{% else %}outline-primary{% endif %}">
+                                All
+                            </a>
+                            <a href="{{ url_for('logs.view_logs', monitor_name=monitor_name, range=time_range, filter='errors', text=filter_text) }}" 
+                               class="btn btn-sm btn-{% if filter_type == 'errors' %}primary{% else %}outline-primary{% endif %}">
+                                Errors
+                            </a>
+                            <a href="{{ url_for('logs.view_logs', monitor_name=monitor_name, range=time_range, filter='custom', text=filter_text) }}" 
+                               class="btn btn-sm btn-{% if filter_type == 'custom' %}primary{% else %}outline-primary{% endif %}">
+                                Custom
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Custom Filter -->
+                    <div class="col-md-4 mb-3">
+                        <form method="get" action="{{ url_for('logs.view_logs', monitor_name=monitor_name) }}">
+                            <input type="hidden" name="range" value="{{ time_range }}">
+                            <input type="hidden" name="filter" value="custom">
+                            <label class="form-label"><i class="fas fa-search"></i> Custom Filter</label>
+                            <div class="input-group">
+                                <input type="text" name="text" class="form-control" 
+                                       value="{{ filter_text }}" placeholder="Search text or regex...">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="log-container p-3">
+                    {% if logs %}
+                        {% for log in logs %}
+                            <div class="log-line {% if log.class %}{{ log.class }}{% endif %}">
+                                {% if log.timestamp %}
+                                <span class="timestamp">{{ log.timestamp }}</span>
+                                {% endif %}
+                                {{ log.line }}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <p class="text-muted mb-0">No log entries found for the selected filters.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <span>
+                    <strong>{{ logs|length }}</strong> log entries
+                </span>
+                <button class="btn btn-sm btn-outline-primary" id="refresh-logs">
+                    <i class="fas fa-sync-alt"></i> Refresh Logs
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if error_patterns or ignore_patterns %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle"></i> Monitor Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if error_patterns %}
+                    <div class="col-md-6">
+                        <h6>Error Patterns:</h6>
+                        <ul class="list-group">
+                            {% for pattern in error_patterns %}
+                            <li class="list-group-item">
+                                <code>{{ pattern }}</code>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    {% if ignore_patterns %}
+                    <div class="col-md-6">
+                        <h6>Ignore Patterns:</h6>
+                        <ul class="list-group">
+                            {% for pattern in ignore_patterns %}
+                            <li class="list-group-item">
+                                <code>{{ pattern }}</code>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Scroll to bottom of logs
+    var logContainer = document.querySelector('.log-container');
+    logContainer.scrollTop = logContainer.scrollHeight;
+    
+    // Refresh logs button
+    $('#refresh-logs').click(function() {
+        location.reload();
+    });
+    
+    // Add click handler for log lines to select text
+    $('.log-line').click(function() {
+        // Create selection range
+        var range = document.createRange();
+        range.selectNodeContents(this);
+        var selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+    });
+});
+</script>
+{% endblock %} 

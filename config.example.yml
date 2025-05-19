@@ -1,0 +1,59 @@
+# Docker connection settings
+docker:
+  # Use 'local' for local Docker daemon or provide a remote Docker host URL
+  host: "local"
+  # Examples:
+  # host: "tcp://192.168.1.100:2375"  # For remote Docker without TLS
+  # host: "tcp://192.168.1.100:2376"  # For remote Docker with TLS
+  # Set to true if using TLS (port 2376)
+  tls: false
+  # Paths to TLS certificates (only used if tls: true)
+  tls_cert_path: ""
+  tls_key_path: ""
+  tls_ca_path: ""
+  # Timeout for Docker API requests in seconds
+  timeout: 10
+
+monitors:
+  # Plex configuration example
+  plex:
+    container_name: "plex"
+    enabled: true
+    # Error patterns to search for in logs
+    error_patterns:
+      - "Error:"
+      - "Exception:"
+      - "Fatal:"
+      - "Critical:"
+      - "Crash detected"
+    # How many seconds to wait between log checks
+    check_interval: 60
+    # Ignore errors that match these patterns
+    ignore_patterns:
+      - "Known issue that can be ignored"
+
+# Alert configuration
+alerts:
+  # SMTP (email) configuration
+  smtp:
+    enabled: false  # Set to true to enable
+    server: "smtp.example.com"
+    port: 587
+    use_tls: true
+    username: "your-email@example.com"
+    password: ""  # Better to use SMTP_PASSWORD env variable
+    from_email: "your-email@example.com"
+    to_emails:
+      - "alerts@example.com"
+    # Cooldown between alerts in seconds (to prevent email flooding)
+    cooldown: 1800  # 30 minutes
+
+  # Discord webhook configuration
+  discord:
+    enabled: false  # Set to true to enable
+    webhook_url: ""  # Better to use DISCORD_WEBHOOK_URL env variable
+    # Cooldown between alerts in seconds
+    cooldown: 300  # 5 minutes
+    # Mention roles or users (optional)
+    mentions:
+      - "@everyone" 

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Container Not Found - Monitorr{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2 text-center mt-5">
+        <div class="alert alert-danger">
+            <h2><i class="fas fa-exclamation-circle"></i> Container Not Found</h2>
+            <p class="lead mt-3">
+                The container "{{ container_name }}" for monitor "{{ monitor_name }}" could not be found.
+            </p>
+            <hr>
+            <p>
+                This could be because:
+            </p>
+            <ul class="list-unstyled">
+                <li>The container is not running</li>
+                <li>The container name in the configuration is incorrect</li>
+                <li>The container has been renamed or removed</li>
+            </ul>
+            <div class="mt-4">
+                <a href="{{ url_for('logs.index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Logs
+                </a>
+                <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Return to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

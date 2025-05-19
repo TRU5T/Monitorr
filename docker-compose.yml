@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  monitorr:
+    build: .
+    image: monitorr:latest
+    container_name: monitorr
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./config.yml:/app/config.yml
+      - ./monitorr.log:/app/monitorr.log
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    environment:
+      - TZ=America/New_York
+      - FLASK_SECRET_KEY=change_this_to_a_random_string 
