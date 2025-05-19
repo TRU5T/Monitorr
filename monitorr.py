@@ -19,13 +19,20 @@ from dotenv import load_dotenv
 from monitors import get_monitor
 from alerts import AlertManager
 
+# Ensure log file exists and has proper permissions
+log_file = 'monitorr.log'
+if not os.path.exists(log_file):
+    with open(log_file, 'a') as f:
+        pass
+os.chmod(log_file, 0o666)
+
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler('monitorr.log')
+        logging.FileHandler(log_file)
     ]
 )
 logger = logging.getLogger('monitorr')
