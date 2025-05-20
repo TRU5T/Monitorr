@@ -5,7 +5,6 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./config.yml:/app/config.yml:rw
       - ./logs:/app/logs:rw
       - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
