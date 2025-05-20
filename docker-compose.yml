@@ -5,8 +5,12 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - /mnt/user/appdata/monitorr/config.yml:/app/config.yml:ro
-      - /mnt/user/appdata/monitorr/logs:/app/logs:rw
+      - type: bind
+        source: ./config.yml
+        target: /app/config.yml
+      - type: bind
+        source: ./logs
+        target: /app/logs
       - /var/run/docker.sock:/var/run/docker.sock:ro
     restart: unless-stopped
     environment:
