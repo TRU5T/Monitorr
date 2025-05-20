@@ -27,6 +27,12 @@ log_file = os.path.join(log_dir, 'monitorr.log')
 os.makedirs(log_dir, exist_ok=True)
 os.chmod(log_dir, 0o777)  # Make sure the directory is writable
 
+# Ensure log file exists and has proper permissions
+if not os.path.exists(log_file):
+    with open(log_file, 'a') as f:
+        pass
+os.chmod(log_file, 0o666)  # Make sure the file is writable
+
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
