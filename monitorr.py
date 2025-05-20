@@ -19,12 +19,13 @@ from dotenv import load_dotenv
 from monitors import get_monitor
 from alerts import AlertManager
 
-# Ensure log file exists and has proper permissions
-log_file = 'monitorr.log'
-if not os.path.exists(log_file):
-    with open(log_file, 'a') as f:
-        pass
-os.chmod(log_file, 0o666)
+# Set up logging with absolute path
+log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
+log_file = os.path.join(log_dir, 'monitorr.log')
+
+# Ensure log directory exists and has proper permissions
+os.makedirs(log_dir, exist_ok=True)
+os.chmod(log_dir, 0o777)  # Make sure the directory is writable
 
 # Set up logging
 logging.basicConfig(
@@ -36,6 +37,12 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger('monitorr')
+
+# Log startup information
+logger.info(f"Starting Monitorr with log file at: {log_file}")
+logger.info(f"Current working directory: {os.getcwd()}")
+logger.info(f"Python executable: {sys.executable}")
+logger.info(f"Python version: {sys.version}")
 
 def load_config():
     """Load configuration from config.yml"""
