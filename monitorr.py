@@ -23,26 +23,45 @@ from alerts import AlertManager
 log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
 log_file = os.path.join(log_dir, 'monitorr.log')
 
+print(f"Log directory: {log_dir}")
+print(f"Log file: {log_file}")
+
 # Ensure log directory exists and has proper permissions
-os.makedirs(log_dir, exist_ok=True)
-os.chmod(log_dir, 0o777)  # Make sure the directory is writable
+try:
+    os.makedirs(log_dir, exist_ok=True)
+    os.chmod(log_dir, 0o777)  # Make sure the directory is writable
+    print(f"Created/verified log directory: {log_dir}")
+except Exception as e:
+    print(f"Error creating log directory: {e}")
+    sys.exit(1)
 
 # Ensure log file exists and has proper permissions
-if not os.path.exists(log_file):
-    with open(log_file, 'a') as f:
-        pass
-os.chmod(log_file, 0o666)  # Make sure the file is writable
+try:
+    if not os.path.exists(log_file):
+        with open(log_file, 'w') as f:
+            f.write('')  # Create empty file
+        print(f"Created log file: {log_file}")
+    os.chmod(log_file, 0o666)  # Make sure the file is writable
+    print(f"Set permissions on log file: {log_file}")
+except Exception as e:
+    print(f"Error creating log file: {e}")
+    sys.exit(1)
 
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler(log_file, mode='a')  # Use append mode
-    ]
-)
-logger = logging.getLogger('monitorr')
+try:
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+            logging.FileHandler(log_file, mode='a')  # Use append mode
+        ]
+    )
+    logger = logging.getLogger('monitorr')
+    print("Logging setup completed successfully")
+except Exception as e:
+    print(f"Error setting up logging: {e}")
+    sys.exit(1)
 
 # Log startup information
 logger.info(f"Starting Monitorr with log file at: {log_file}")
