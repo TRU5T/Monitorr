@@ -124,7 +124,13 @@ def index():
             with open('config.yml', 'w') as f:
                 yaml.dump(config, f, default_flow_style=False)
             
-            flash('Configuration saved successfully. Restart Monitorr to apply changes.', 'success')
+            # Get Monitorr instance and reload monitors
+            monitorr = current_app.config.get('MONITORR_INSTANCE')
+            if monitorr and monitorr.reload_monitors():
+                flash('Configuration saved and monitors reloaded successfully.', 'success')
+            else:
+                flash('Configuration saved but failed to reload monitors. Please check the logs.', 'warning')
+            
             return redirect(url_for('settings.index'))
         except yaml.YAMLError as e:
             flash(f'Invalid YAML configuration: {str(e)}', 'danger')
@@ -244,7 +250,7 @@ def docker_settings():
 
 @bp.route('/add_monitor/<container_name>', methods=['GET', 'POST'])
 def add_monitor(container_name):
-    """Add a new monitor for a specific container"""
+    """Add a new container monitor"""
     form = MonitorForm()
     
     # Load current configuration
@@ -253,7 +259,6 @@ def add_monitor(container_name):
             config = yaml.safe_load(f)
     except (FileNotFoundError, yaml.YAMLError):
         config = {}
-        flash('Configuration file not found or invalid. Creating new configuration.', 'warning')
     
     # If form is submitted and valid
     if form.validate_on_submit():
@@ -261,44 +266,49 @@ def add_monitor(container_name):
         if 'monitors' not in config:
             config['monitors'] = {}
         
-        # Determine monitor ID (use container name by default, but make sure it's unique)
-        monitor_id = container_name
-        count = 1
-        while monitor_id in config['monitors']:
-            monitor_id = f"{container_name}_{count}"
-            count += 1
+        # Get monitor type and create appropriate configuration
+        monitor_type = form.monitor_type.data
+        monitor_name = f"{monitor_type}_{container_name}"
         
-        # Create new monitor configuration
-        config['monitors'][monitor_id] = {
+        # Create monitor configuration
+        monitor_config = {
+            'enabled': form.enabled.data,
             'container_name': container_name,
             'check_interval': form.check_interval.data,
-            'enabled': form.enabled.data,
-            'monitor_type': form.monitor_type.data
+            'alert_threshold': 5,  # Default values
+            'alert_interval': 300
         }
         
-        # Save configuration
+        # Add type-specific configuration
+        if monitor_type == 'plex':
+            monitor_config['log_pattern'] = r'error|exception|failed'
+        elif monitor_type == 'jellyfin':
+            monitor_config['log_pattern'] = r'error|exception|failed'
+        elif monitor_type == 'sonarr':
+            monitor_config['log_pattern'] = r'error|exception|failed'
+        elif monitor_type == 'radarr':
+            monitor_config['log_pattern'] = r'error|exception|failed'
+        else:  # generic
+            monitor_config['log_pattern'] = r'error|exception|failed'
+        
+        # Add monitor to configuration
+        config['monitors'][monitor_name] = monitor_config
+        
+        # Save updated configuration
         try:
             with open('config.yml', 'w') as f:
                 yaml.dump(config, f, default_flow_style=False)
             
-            flash(f'Monitor for {container_name} added successfully. Restart Monitorr to apply changes.', 'success')
-            return redirect(url_for('settings.docker_settings'))
+            # Get Monitorr instance and reload monitors
+            monitorr = current_app.config.get('MONITORR_INSTANCE')
+            if monitorr and monitorr.reload_monitors():
+                flash(f'Monitor {monitor_name} added and started successfully.', 'success')
+            else:
+                flash(f'Monitor {monitor_name} added but failed to start. Please check the logs.', 'warning')
+            
+            return redirect(url_for('settings.index'))
         except Exception as e:
             flash(f'Error saving configuration: {str(e)}', 'danger')
-    
-    # Select monitor type based on container name/image
-    if not form.is_submitted():
-        # Try to determine the monitor type from container name
-        if 'plex' in container_name.lower():
-            form.monitor_type.data = 'plex'
-        elif 'jellyfin' in container_name.lower():
-            form.monitor_type.data = 'jellyfin'
-        elif 'sonarr' in container_name.lower():
-            form.monitor_type.data = 'sonarr'
-        elif 'radarr' in container_name.lower():
-            form.monitor_type.data = 'radarr'
-        else:
-            form.monitor_type.data = 'generic'
     
     return render_template('settings/add_monitor.html', form=form, container_name=container_name)
 

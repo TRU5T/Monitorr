@@ -120,8 +120,17 @@ class Monitorr:
         try:
             if docker_host == 'local':
                 # Connect to local Docker daemon
-                client = docker.from_env(timeout=timeout)
-                logger.info("Connecting to local Docker daemon")
+                logger.info("Attempting to connect to local Docker daemon...")
+                try:
+                    client = docker.from_env(timeout=timeout)
+                    # Test connection
+                    client.ping()
+                    logger.info(f"Successfully connected to local Docker daemon: {client.version()['Version']}")
+                    return client
+                except docker.errors.DockerException as e:
+                    logger.error(f"Failed to connect to local Docker daemon: {e}")
+                    logger.error("Please ensure Docker daemon is running and you have proper permissions.")
+                    return None
             else:
                 # Connect to remote Docker host
                 tls_config = None
@@ -137,20 +146,24 @@ class Monitorr:
                             verify=True
                         )
                 
-                logger.info(f"Connecting to remote Docker host at {docker_host}")
-                client = docker.DockerClient(
-                    base_url=docker_host,
-                    tls=tls_config,
-                    timeout=timeout
-                )
-            
-            # Test connection
-            client.ping()
-            logger.info(f"Connected to Docker: {client.version()['Version']}")
-            return client
-        except docker.errors.DockerException as e:
-            logger.error(f"Failed to connect to Docker: {e}")
-            logger.error("Please check your Docker configuration or configure a remote Docker host through the web interface.")
+                logger.info(f"Attempting to connect to remote Docker host at {docker_host}...")
+                try:
+                    client = docker.DockerClient(
+                        base_url=docker_host,
+                        tls=tls_config,
+                        timeout=timeout
+                    )
+                    # Test connection
+                    client.ping()
+                    logger.info(f"Successfully connected to remote Docker host: {client.version()['Version']}")
+                    return client
+                except docker.errors.DockerException as e:
+                    logger.error(f"Failed to connect to remote Docker host: {e}")
+                    logger.error("Please check your Docker host configuration and network connectivity.")
+                    return None
+                
+        except Exception as e:
+            logger.error(f"Unexpected error during Docker client setup: {e}")
             return None
         
     def _setup_monitors(self):
@@ -175,19 +188,63 @@ class Monitorr:
                 continue
                 
             try:
-                monitor_class = get_monitor(monitor_name)
+                # Get monitor type from config
+                monitor_type = monitor_config.get('monitor_type', 'generic')
+                monitor_class = get_monitor(monitor_type)
+                
                 if monitor_class:
                     self.monitors[monitor_name] = monitor_class(
                         self.docker_client,
                         monitor_config,
                         self.alert_manager
                     )
-                    logger.info(f"Initialized monitor for {monitor_name}")
+                    logger.info(f"Initialized {monitor_type} monitor for {monitor_name}")
                 else:
-                    logger.warning(f"No monitor found for {monitor_name}")
+                    logger.warning(f"No monitor class found for type {monitor_type}")
             except Exception as e:
                 logger.error(f"Failed to initialize monitor {monitor_name}: {e}")
     
+    def reload_monitors(self):
+        """Reload monitors from configuration"""
+        try:
+            # Clear existing monitors and schedules
+            self.monitors.clear()
+            schedule.clear()
+            
+            # Reload configuration
+            self.config = load_config()
+            
+            # Ensure Docker client is available
+            if not self.docker_client:
+                logger.error("Cannot reload monitors: Docker client not available")
+                return False
+                
+            # Set up monitors again
+            self._setup_monitors()
+            
+            # Reschedule monitors
+            if self.monitors:
+                for monitor_name, monitor in self.monitors.items():
+                    if monitor.config.get('enabled', True):  # Only schedule enabled monitors
+                        interval = monitor.config.get('check_interval', 60)
+                        schedule.every(interval).seconds.do(monitor.check_logs)
+                        logger.info(f"Rescheduled {monitor_name} monitor to run every {interval} seconds")
+                
+                # Run initial check for all monitors
+                for monitor in self.monitors.values():
+                    if monitor.config.get('enabled', True):
+                        monitor.check_logs()
+                
+                logger.info("Successfully reloaded and started all monitors")
+                return True
+            else:
+                logger.warning("No monitors configured after reload")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error reloading monitors: {e}")
+            return False
+
     def start(self, with_web=False, web_host='0.0.0.0', web_port=5000):
         """Start the monitoring process"""
         logger.info("Starting Monitorr...")
