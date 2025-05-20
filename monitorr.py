@@ -33,7 +33,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler(log_file)
+        logging.FileHandler(log_file, mode='a')  # Use append mode
     ]
 )
 logger = logging.getLogger('monitorr')
