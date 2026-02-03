@@ -15,5 +15,5 @@ RUN mkdir -p /app/logs && chmod 777 /app/logs
 # Expose port
 EXPOSE 5000
 
-# Run the application
-CMD ["python", "monitorr.py", "--web-only", "--host", "0.0.0.0", "--port", "5000"] 
+# Run the application with both monitoring and web interface
+CMD ["python", "monitorr.py", "--web", "--host", "0.0.0.0", "--port", "5000"] 

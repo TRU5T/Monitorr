@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<Container>
+  <Name>Monitorr</Name>
+  <Repository>monitorr:latest</Repository>
+  <Registry>https://github.com/TRU5T/Monitorr</Registry>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/TRU5T/Monitorr/issues</Support>
+  <Project>https://github.com/TRU5T/Monitorr</Project>
+  <TemplateURL>https://raw.githubusercontent.com/TRU5T/Monitorr/main/monitorr.xml</TemplateURL>
+  <Overview>Monitorr - Docker container log monitoring application with alerting capabilities. Monitors logs from Docker containers (Plex, Jellyfin, Radarr, Sonarr, and more) and sends alerts via email or Discord when errors are detected.</Overview>
+  <Category>Utility</Category>
+  <WebUI>http://[IP]:[PORT:5000]/</WebUI>
+  <Icon>https://raw.githubusercontent.com/TRU5T/Monitorr/main/icon.png</Icon>
+  <Config Name="WebUI Port" Target="5000" Default="5000" Mode="tcp" Description="Monitorr web interface port." Type="Port" Display="always" Required="true" Mask="false">5000</Config>
+  <Config Name="Config Path" Target="/app/config.yml" Default="/mnt/user/appdata/monitorr/config.yml" Mode="rw" Description="Path to config.yml configuration file." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/monitorr/config.yml</Config>
+  <Config Name="Logs Path" Target="/app/logs" Default="/mnt/user/appdata/monitorr/logs" Mode="rw" Description="Path to store application logs." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/monitorr/logs</Config>
+  <Config Name="Docker Socket" Target="/var/run/docker.sock" Default="/var/run/docker.sock" Mode="ro" Description="Docker socket for container access (required for monitoring)." Type="Path" Display="always" Required="true" Mask="false">/var/run/docker.sock</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="Run container as this user ID (Unraid default 99)." Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Run container as this group ID (Unraid default 100)." Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+  <Config Name="Timezone" Target="TZ" Default="America/New_York" Mode="" Description="Container timezone (e.g., America/New_York, Europe/London)." Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
+  <Config Name="Flask Secret Key" Target="FLASK_SECRET_KEY" Default="" Mode="" Description="Secret key for Flask sessions (change this for security!)." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="SMTP Password" Target="SMTP_PASSWORD" Default="" Mode="" Description="SMTP password for email alerts (optional, can also be set in config.yml)." Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+  <Config Name="Discord Webhook URL" Target="DISCORD_WEBHOOK_URL" Default="" Mode="" Description="Discord webhook URL for alerts (optional, can also be set in config.yml)." Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+</Container>
