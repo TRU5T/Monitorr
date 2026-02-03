@@ -124,9 +124,8 @@ def index():
         try:
             # Parse YAML to validate it
             config = yaml.safe_load(form.yaml_config.data)
-            
-            # Save to config.yml
-            with open('config.yml', 'w') as f:
+            # Save to config
+            with open(_config_path(), 'w') as f:
                 yaml.dump(config, f, default_flow_style=False)
             
             # Get Monitorr instance and reload monitors
@@ -142,13 +141,15 @@ def index():
     
     # Load current configuration for display
     current_config = ""
+    config_path = _config_path()
     try:
-        with open('config.yml', 'r') as f:
+        with open(config_path, 'r') as f:
             current_config = f.read()
     except FileNotFoundError:
         # If config.yml doesn't exist, try to read from config.example.yml
+        example_path = os.path.join(os.path.dirname(config_path), 'config.example.yml')
         try:
-            with open('config.example.yml', 'r') as f:
+            with open(example_path, 'r') as f:
                 current_config = f.read()
         except FileNotFoundError:
             flash('No configuration file found', 'warning')
@@ -166,11 +167,11 @@ def docker_settings():
     
     # Load current configuration
     try:
-        with open('config.yml', 'r') as f:
+        with open(_config_path(), 'r') as f:
             config = yaml.safe_load(f)
     except (FileNotFoundError, yaml.YAMLError):
         config = {}
-    
+
     docker_config = config.get('docker', {})
     connection_test_result = None
     
@@ -217,7 +218,7 @@ def docker_settings():
         else:
             # Save configuration
             try:
-                with open('config.yml', 'w') as f:
+                with open(_config_path(), 'w') as f:
                     yaml.dump(config, f, default_flow_style=False)
                 
                 flash('Docker configuration saved successfully. Restart Monitorr to apply changes.', 'success')
@@ -253,68 +254,81 @@ def docker_settings():
     
     return render_template('settings/docker.html', form=form, connection_test=connection_test_result)
 
+def _config_path():
+    """Path to config file (respect mount when running in Docker)."""
+    return os.environ.get('CONFIG_PATH', os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'config.yml'))
+
+
 @bp.route('/add_monitor/<container_name>', methods=['GET', 'POST'])
 def add_monitor(container_name):
     """Add a new container monitor"""
-    form = MonitorForm()
-    
-    # Load current configuration
     try:
-        with open('config.yml', 'r') as f:
-            config = yaml.safe_load(f)
-    except (FileNotFoundError, yaml.YAMLError):
-        config = {}
-    
-    # If form is submitted and valid
-    if form.validate_on_submit():
-        # Create monitors section if it doesn't exist
-        if 'monitors' not in config:
-            config['monitors'] = {}
-        
-        # Get monitor type and create appropriate configuration
-        monitor_type = form.monitor_type.data
-        monitor_name = f"{monitor_type}_{container_name}"
-        
-        # Create monitor configuration
-        monitor_config = {
-            'enabled': form.enabled.data,
-            'container_name': container_name,
-            'check_interval': form.check_interval.data,
-            'alert_threshold': 5,  # Default values
-            'alert_interval': 300
-        }
-        
-        # Add type-specific configuration
-        if monitor_type == 'plex':
-            monitor_config['log_pattern'] = r'error|exception|failed'
-        elif monitor_type == 'jellyfin':
-            monitor_config['log_pattern'] = r'error|exception|failed'
-        elif monitor_type == 'sonarr':
-            monitor_config['log_pattern'] = r'error|exception|failed'
-        elif monitor_type == 'radarr':
-            monitor_config['log_pattern'] = r'error|exception|failed'
-        else:  # generic
-            monitor_config['log_pattern'] = r'error|exception|failed'
-        
-        # Add monitor to configuration
-        config['monitors'][monitor_name] = monitor_config
-        
-        # Save updated configuration
+        form = MonitorForm()
+        config_path = _config_path()
+
+        # Load current configuration
         try:
-            with open('config.yml', 'w') as f:
-                yaml.dump(config, f, default_flow_style=False)
-            
-            # Get Monitorr instance and reload monitors
-            monitorr = current_app.config.get('MONITORR_INSTANCE')
-            if monitorr and monitorr.reload_monitors():
-                flash(f'Monitor {monitor_name} added and started successfully.', 'success')
-            else:
-                flash(f'Monitor {monitor_name} added but failed to start. Please check the logs.', 'warning')
-            
-            return redirect(url_for('settings.index'))
-        except Exception as e:
-            flash(f'Error saving configuration: {str(e)}', 'danger')
-    
+            with open(config_path, 'r') as f:
+                config = yaml.safe_load(f)
+        except (FileNotFoundError, yaml.YAMLError):
+            config = {}
+
+        # If form is submitted and valid
+        if form.validate_on_submit():
+            # Create monitors section if it doesn't exist
+            if 'monitors' not in config:
+                config['monitors'] = {}
+
+            # Get monitor type and create appropriate configuration
+            monitor_type = form.monitor_type.data
+            monitor_name = f"{monitor_type}_{container_name}"
+
+            # Create monitor configuration
+            monitor_config = {
+                'enabled': form.enabled.data,
+                'container_name': container_name,
+                'check_interval': form.check_interval.data,
+                'alert_threshold': 5,  # Default values
+                'alert_interval': 300
+            }
+
+            # Add type-specific configuration
+            if monitor_type == 'plex':
+                monitor_config['log_pattern'] = r'error|exception|failed'
+            elif monitor_type == 'jellyfin':
+                monitor_config['log_pattern'] = r'error|exception|failed'
+            elif monitor_type == 'sonarr':
+                monitor_config['log_pattern'] = r'error|exception|failed'
+            elif monitor_type == 'radarr':
+                monitor_config['log_pattern'] = r'error|exception|failed'
+            else:  # generic
+                monitor_config['log_pattern'] = r'error|exception|failed'
+
+            # Add monitor to configuration
+            config['monitors'][monitor_name] = monitor_config
+
+            # Save updated configuration
+            try:
+                with open(config_path, 'w') as f:
+                    yaml.dump(config, f, default_flow_style=False)
+
+                # Get Monitorr instance and reload monitors
+                monitorr = current_app.config.get('MONITORR_INSTANCE')
+                if monitorr and monitorr.reload_monitors():
+                    flash(f'Monitor {monitor_name} added and started successfully.', 'success')
+                else:
+                    flash(f'Monitor {monitor_name} added but failed to start. Please check the logs.', 'warning')
+
+                return redirect(url_for('settings.index'))
+            except Exception as e:
+                current_app.logger.exception("Error saving monitor config")
+                flash(f'Error saving configuration: {str(e)}', 'danger')
+
+    except Exception as e:
+        current_app.logger.exception("Error in add_monitor")
+        flash(f'Error loading add monitor page: {str(e)}', 'danger')
+        return redirect(url_for('settings.docker_settings'))
+
     return render_template('settings/add_monitor.html', form=form, container_name=container_name)
 
 @bp.route('/env')
