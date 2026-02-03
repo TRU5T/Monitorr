@@ -84,24 +84,29 @@ def test_docker_connection(config):
         client.ping()
         version = client.version()
         
-        # Get containers
+        # Get containers (use attrs for image to avoid 404 if image was removed)
         containers = client.containers.list(all=True)
-        
+        container_list = []
+        for container in containers:
+            config_image = container.attrs.get('Config', {}).get('Image') or ''
+            if config_image:
+                image_display = config_image
+            else:
+                image_id = container.attrs.get('Image', '')
+                image_display = image_id[7:19] if image_id.startswith('sha256:') else (image_id[:12] if len(image_id) >= 12 else image_id)
+            container_list.append({
+                'id': container.id[:12],
+                'name': container.name,
+                'image': image_display,
+                'status': container.status
+            })
         return {
             'success': True,
             'version': version.get('Version', 'Unknown'),
             'api_version': version.get('ApiVersion', 'Unknown'),
             'os': version.get('Os', 'Unknown'),
             'arch': version.get('Arch', 'Unknown'),
-            'containers': [
-                {
-                    'id': container.id[:12],
-                    'name': container.name,
-                    'image': container.image.tags[0] if container.image.tags else container.image.id[:12],
-                    'status': container.status
-                }
-                for container in containers
-            ]
+            'containers': container_list
         }
     except Exception as e:
         return {

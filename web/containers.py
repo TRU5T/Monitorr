@@ -56,6 +56,18 @@ def get_docker_client():
         current_app.logger.error(f"Failed to connect to Docker: {e}")
         return None
 
+
+def _container_image_display(container):
+    """Get image name/ID for display without fetching the image (avoids 404 if image was removed)."""
+    config_image = container.attrs.get('Config', {}).get('Image') or ''
+    if config_image:
+        return config_image
+    image_id = container.attrs.get('Image', '')
+    if image_id.startswith('sha256:'):
+        return image_id[7:19]  # 12-char short ID
+    return image_id[:12] if len(image_id) >= 12 else image_id
+
+
 @bp.route('/')
 def index():
     """List all containers"""
@@ -76,13 +88,15 @@ def index():
             for monitor in monitorr.monitors.values():
                 monitored_containers.add(monitor.container_name)
         
-        # Format container data for display
+        # Format container data for display (use attrs to avoid fetching image;
+        # image may have been removed after container was created, causing 404)
         container_list = []
         for container in containers:
+            image_display = _container_image_display(container)
             container_list.append({
                 'id': container.id[:12],
                 'name': container.name,
-                'image': container.image.tags[0] if container.image.tags else container.image.id[:12],
+                'image': image_display,
                 'status': container.status,
                 'monitored': container.name in monitored_containers
             })
@@ -105,11 +119,11 @@ def details(container_name):
         # Get container
         container = docker_client.containers.get(container_name)
         
-        # Get container information
+        # Get container information (use attrs for image to avoid 404 if image was removed)
         info = {
             'id': container.id,
             'name': container.name,
-            'image': container.image.tags[0] if container.image.tags else container.image.id[:12],
+            'image': _container_image_display(container),
             'status': container.status,
             'created': container.attrs.get('Created', 'Unknown'),
             'ports': container.ports,
