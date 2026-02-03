@@ -2,7 +2,7 @@
 Settings blueprint for configuring the application
 """
 
-from flask import Blueprint, render_template, current_app, request, redirect, url_for, flash
+from flask import Blueprint, render_template, current_app, request, redirect, url_for, flash, Response
 import yaml
 import os
 import docker
@@ -266,11 +266,13 @@ def add_monitor(container_name):
         form = MonitorForm()
         config_path = _config_path()
 
-        # Load current configuration
+        # Load current configuration (catch all read errors so page always loads)
         try:
             with open(config_path, 'r') as f:
                 config = yaml.safe_load(f)
-        except (FileNotFoundError, yaml.YAMLError):
+            if not isinstance(config, dict):
+                config = {}
+        except (FileNotFoundError, yaml.YAMLError, OSError, PermissionError, IsADirectoryError):
             config = {}
 
         # If form is submitted and valid
@@ -327,6 +329,11 @@ def add_monitor(container_name):
     except Exception as e:
         current_app.logger.exception("Error in add_monitor")
         flash(f'Error loading add monitor page: {str(e)}', 'danger')
+        # If SHOW_ERRORS is set, return error details in response so we can fix the cause
+        if os.environ.get('SHOW_ERRORS', '').lower() in ('1', 'true', 'yes'):
+            import traceback
+            body = '<h1>Add monitor error</h1><pre>' + traceback.format_exc() + '</pre>'
+            return Response(body, status=500, mimetype='text/html')
         return redirect(url_for('settings.docker_settings'))
 
     return render_template('settings/add_monitor.html', form=form, container_name=container_name)

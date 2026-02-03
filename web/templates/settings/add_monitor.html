@@ -25,7 +25,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="post">
+                <form method="post" action="{{ url_for('settings.add_monitor', container_name=container_name) }}">
                     {{ form.csrf_token }}
                     
                     <div class="mb-3">
