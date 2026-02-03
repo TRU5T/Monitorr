@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <Container>
   <Name>Monitorr</Name>
-  <Repository>monitorr:latest</Repository>
-  <Registry>https://github.com/TRU5T/Monitorr</Registry>
+  <Repository>ghcr.io/tru5t/monitorr:latest</Repository>
+  <Registry>https://github.com/TRU5T/Monitorr/pkgs/container/monitorr</Registry>
   <Network>bridge</Network>
   <Privileged>false</Privileged>
   <Support>https://github.com/TRU5T/Monitorr/issues</Support>
